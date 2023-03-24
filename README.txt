@@ -1,5 +1,7 @@
 CHESSREPLAYER FOR COMMODORE PET
 
+version 1.0, 2023-03-24
+
 BACKGROUND
 
 I have had a weird love affair with the Commodore PET over the years.  A couple of years ago, I finally managed to get hold of one and restored it to working condition.  I applied a couple of upgrades to it to allow easier loading of software pulled from the internet and updated it to a full 32KB of memory.  But then it mostly sits there in my office doing nothing.
