@@ -1057,5 +1057,5 @@ is advised.
 
     num_bytes = ptp.write_pet_datafile('chessdata')
     print(f"number of bytes written to chessdata file: {num_bytes}")
-    num_bytes = ptp.dump_asm_byte_statements()
-    print(f"number of bytes printed to screen: {num_bytes}")
+    # num_bytes = ptp.dump_asm_byte_statements()
+    # print(f"number of bytes printed to screen: {num_bytes}")

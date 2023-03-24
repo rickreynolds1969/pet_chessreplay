@@ -1,6 +1,12 @@
 CHESSREPLAYER FOR COMMODORE PET
 
-version 1.0, 2023-03-24
+Version 1.0, 2023-03-24
+
+
+NOTE
+
+As distributed, the Chess Replayer is expected to be run on a PET with 32KB of memory.  The chess games distributed with the program take up 18KB of space.  If you want to run Chess Replayer on a PET with less memory, you'll need to encode your own chess game(s) from PGN file(s) using the tool provided.
+
 
 BACKGROUND
 
@@ -23,7 +29,11 @@ The .d64 image contains the Chess Replayer program and a data file containing th
 
 I have also included the pgn_to_pet.py program that will allow you to encode PGN files of your own choosing for use with the Chess Replayer.  It is written in Python 3, sorry if you're still using Python 2.  The code isn't overly complex, so a Python 2 user can probably get it to run with minimal changes.
 
-To encode your own .pgn file(s) into binary form that can be read by the Chess Replayer, simply run "python3 pgn_to_pet.py <pgn file>".  An output file named "chessdata" will be created in the current directory.
+To encode your own PGN file(s) into binary form that can be read by the Chess Replayer, simply run the pgn_to_pet.py utility:
+
+python3 pgn_to_pet.py <pgn file>
+
+An output file named "chessdata" will be created in the current directory.
 
 To facilitate users creating their own chessdata files and using them, I've included the chessreplay.prg file outside of the .d64 image as well.  It is identical to the one inside the chessreplay.d64 file.
 
@@ -44,7 +54,11 @@ CAVEATS
 
 I've written and tested these programs on a Mac and a Linux machine.  I've run the Chess Replayer in VICE on both platforms as well as on my hardware PET 2001.  I've not tried it on any other platform.
 
-The pgn_to_pet.py file uses a parser of my own design to read .pgn files.  This was done because I didn't want folks who many not be overly familiar with python programming to need to pull down external packages.  I've put several .pgn data files through my parser, but there may be latent bugs somewhere.  If you attempt to encode a .pgn file and hit any errors, feel free to contact me with the offending .pgn file and I'll see if I can debug the issue.
+The pgn_to_pet.py file uses a parser of my own design to read PGN files.  This was done because I didn't want folks who many not be overly familiar with python programming to need to pull down external packages.  I've put several PGN data files through my parser, but there may be latent bugs somewhere.  If you attempt to encode a PGN file and hit any errors, feel free to contact me with the offending PGN file and I'll see if I can debug the issue.
+
+The pgn_to_pet.py program processes any and all PGN data it is given.  It us up to the user to determine whether or not a chessdata file is too large to load onto a specific PET.  E.g. if the chessdata file created is 22KB, it certainly cannot be loaded onto a PET 2001 that has only 8KB of memory.  Neither the pgn_to_pet.py program nor the Chess Replayer make any checks to ensure that the chessdata file can fit into the PET's memory.  The chessdata file is loaded into memory at location $0C00 (3072).
+
+The Spassky/Fischer data file that is provided in the .d64 image is just a hair over 18KB.  It is intended to be run on PETs with 32KB of memory.
 
 
 CREDITS
