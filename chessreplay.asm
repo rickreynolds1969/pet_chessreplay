@@ -63,67 +63,67 @@ TITLELOC = $83C0                       ; pointer to the location to print the Ti
 CHESSGAMESDATA = $0C00                 ; pointer to the location of the chess games data
 
 ; some macros for dealing with pointers
-    MAC DEFINE_PTR         ;  {addr, ptr}
-              pha
-              lda #<{1}
-              sta {2}
-              lda #>{1}
-              sta {2}+1
-              pla
-    ENDM
+              MAC DEFINE_PTR         ;  {addr, ptr}
+                  pha
+                  lda #<{1}
+                  sta {2}
+                  lda #>{1}
+                  sta {2}+1
+                  pla
+              ENDM
 
-    MAC COPY_PTR           ; {srcptr, dstptr}
-              pha
-              lda {1}
-              sta {2}
-              lda {1}+1
-              sta {2}+1
-              pla
-    ENDM
+              MAC COPY_PTR           ; {srcptr, dstptr}
+                  pha
+                  lda {1}
+                  sta {2}
+                  lda {1}+1
+                  sta {2}+1
+                  pla
+              ENDM
 
-    MAC ADVANCE_PTR
-              inc {1}
-              bne .maclabel
-              inc {1}+1
+              MAC ADVANCE_PTR
+                  inc {1}
+                  bne .maclabel
+                  inc {1}+1
 .maclabel
-    ENDM
+              ENDM
 
-    MAC ADVANCE_PTR_BY_N   ;  {ptr, n}
-              pha
-              clc
-              lda {1}
-              adc #{2}
-              sta {1}
-              lda {1}+1
-              adc #0
-              sta {1}+1
-              pla
-    ENDM
+              MAC ADVANCE_PTR_BY_N   ;  {ptr, n}
+                  pha
+                  clc
+                  lda {1}
+                  adc #{2}
+                  sta {1}
+                  lda {1}+1
+                  adc #0
+                  sta {1}+1
+                  pla
+              ENDM
 
-    MAC RETREAT_PTR_BY_N   ;  {ptr, n}
-              pha
-              sec
-              lda {1}
-              sbc #{2}
-              sta {1}
-              lda {1}+1
-              sbc #0
-              sta {1}+1
-              pla
-    ENDM
+              MAC RETREAT_PTR_BY_N   ;  {ptr, n}
+                  pha
+                  sec
+                  lda {1}
+                  sbc #{2}
+                  sta {1}
+                  lda {1}+1
+                  sbc #0
+                  sta {1}+1
+                  pla
+              ENDM
 
-    MAC ADVANCE_PTR_BY_Y   ;  {ptr}
-              pha
-              sty SCRATCH2
-              clc
-              lda {1}
-              adc SCRATCH2
-              sta {1}
-              lda {1}+1
-              adc #0
-              sta {1}+1
-              pla
-    ENDM
+              MAC ADVANCE_PTR_BY_Y   ;  {ptr}
+                  pha
+                  sty SCRATCH2
+                  clc
+                  lda {1}
+                  adc SCRATCH2
+                  sta {1}
+                  lda {1}+1
+                  adc #0
+                  sta {1}+1
+                  pla
+              ENDM
 
 ;
 ; This preamble puts the following basic code in place
