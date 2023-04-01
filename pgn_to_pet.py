@@ -4,15 +4,6 @@ import argparse
 import struct
 
 
-# NOTE: this address needs to match the address for CHESSGAMESDATA in the assembly code. It also must be higher in
-# memory than the end of the program data post-assembly. The label ENDOFCODE can be checked in DASM's output to find
-# the upper end of the memory used by the program.
-
-# set the starting addr as 0C00
-CHESS_DATA_STARTING_ADDRESS_MSB = 0x0C
-CHESS_DATA_STARTING_ADDRESS_LSB = 0x00
-
-
 class PgnToPet:
     def __init__(self, filenames):
         games = []
@@ -23,7 +14,7 @@ class PgnToPet:
         self.stream_code = {'BR': 101, 'BN': 102, 'BB': 103, 'BQ': 104, 'BK': 105, 'BP': 106, 'WR': 107, 'WN': 108,
                             'WB': 109, 'WQ': 110, 'WK': 111, 'WP': 112, 'BS': 113, 'ZZ': 114, 'DP': 115, 'DN': 116,
                             'CB': 117, 'PG': 118, 'EV': 119, 'DT': 120, 'WX': 121, 'BX': 122, 'MX': 123, 'PX': 124,
-                            'NG': 125, 'EOG': 126, 'EOR': 254, 'EOF': 255}
+                            'EOG': 125, 'NG': 126, 'EOF': 127, 'EOR': 254}
         self.default_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
         for filename in filenames:
@@ -1027,9 +1018,6 @@ class PgnToPet:
             if ch < 0:
                 print(f"found {ch} at count={count}")
         with open(filename, 'wb') as fhw:
-            # write the loading address in first two bytes
-            fhw.write(struct.pack('BB', CHESS_DATA_STARTING_ADDRESS_LSB,
-                                  CHESS_DATA_STARTING_ADDRESS_MSB))
             try:
                 for ch in self.output_stream:
                     fhw.write(struct.pack('B', ch))

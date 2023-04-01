@@ -5,8 +5,8 @@
 ; Definitions
 ;
 
-BL = $20         ; code for a black square on the chessboard
-WH = $A0         ; code for a white square on the chessboard
+BL = $20          ; code for a black square on the chessboard
+WH = $A0          ; code for a white square on the chessboard
 
 ; some zero-page pointers
 SQUAREPTR = $4B   ; zero page location where I'll store the screen address of a square to draw
@@ -14,6 +14,23 @@ PIECEPTR = $4D    ; zero page location where I'll store the address of the piece
 CHMOVEPTR = $4F   ; zero page location where I'll store the address of the move being drawn
 SOURCEPTR = $51   ; zero page pointer to the text are on the screen, for scrolling
 SCREENPTR = $53   ; zero page pointer to the text are on the screen, for scrolling
+
+; locations and constants for file operations
+KERNALCLOSE = $F2E2
+KERNALREADCHAR = $F215
+KERNALSETINPUT = $F7AF
+KERNALOPENFILE = $F563
+
+FILENAMELENLOC = $D1
+FILENUMLOC = $D2
+SECONDARYADDRNUMLOC = $D3
+DEVICENUMLOC = $D4
+FILENAMEPTR = $DA
+
+FILENUM = 2
+SECONDARYADDRNUM = 2
+DEVICENUM = 8
+FILENAMELEN = 9
 
 ; Codes for the data stream loop. NOTE: in a former version these codes were used for matching
 ; specific tokens in the game data. Now they aren't really used as symbols as they've been replaced
@@ -43,10 +60,10 @@ WX = 121      ; "White player" record
 BX = 122      ; "Black player" record
 MX = 123      ; First move number
 PX = 124      ; First player (0=White, 1=Black)
-NG = 125      ; New game
-EOG = 126     ; Draw an end of game PGN: 0-1, 1-0, *, etc.
+EOG = 125     ; Draw an end of game PGN: 0-1, 1-0, *, etc.
+NG = 126      ; New game
+EOF = 127     ; End of file
 EOR = 254     ; End of record
-EOF = 255     ; End of file
 
 TOPOFTEXT = $8000 + (8 * 40) + 23      ; top of text area for the PGN notation of the moves:
                                        ;   8 lines down, 24 columns over
@@ -60,7 +77,7 @@ BLACKLOC = $80B8                       ; pointer to the location to print the Bl
 DATELOC = $8108                        ; pointer to the location to print the Date text
 TITLELOC = $83C0                       ; pointer to the location to print the Title text
 
-CHESSGAMESDATA = $0C00                 ; pointer to the location of the chess games data
+CHESSGAMESDATA = $0D00                 ; pointer to the location of the chess games data
 
 ; some macros for dealing with pointers
               MAC DEFINE_PTR         ;  {addr, ptr}
@@ -124,43 +141,32 @@ CHESSGAMESDATA = $0C00                 ; pointer to the location of the chess ga
                   sta {1}+1
                   pla
               ENDM
-
 ;
-; This preamble puts the following basic code in place
+; Recipe to setup the code with one basic line:
 ;
-; 10 IFD=1THEN30
-; 20 D=1:LOAD"CHESSDATA",8,1
-; 30 SYS1088
+; 10 SYS 1040
 ;
-; 1088 is $0440
+; These three lines put that basic one-liner into the start of basic memory
+; (on the PET that's at $0400).  Memory location 1040 (decimal) is $0410 (hex).
 ;
-; The chessdata file is created by a python program that embeds the load address of $0C00
-; (CHESSGAMESDATA above) at the front so that the above LOAD command loads it straight into memory
-; at that address. The trick with the D variable is there because running a LOAD command within
-; basic will rerun the program from the start, but the variable space will be left intact.
-;
-; Thanks to Michael Martin at bumbershootsoft.wordpress.com for the article about making BASIC and
-; assembler co-exist together.
-;
-; TODO: I would LOVE to figure out a way to read a disk file programmatically from assembler.  It
-; would be great if this program would fetch one game's data at a time and therefore be decently
-; free of memory limitations for the number of chess games it can display in its loop.  Something
-; for a future version.
-;
-; Every tutorial or example code project that I have found has not worked for me.  I'm
-; misunderstanding something.
-;
-
               org $0401
-       .byte      $0D, $04, $0A, $00, $8B, $44, $B2, $31, $A7, $33, $30, $00, $26, $04, $14
-       .byte $00, $44, $B2, $31, $3A, $93, $22, $43, $48, $45, $53, $53, $44, $41, $54, $41
-       .byte $22, $2C, $38, $2C, $31, $00, $30, $04, $1E, $00, $9E, $31, $30, $38, $38, $00
-       .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+;                  0400   01   02   03   04   05   06   07
+;                        [040E is addr of next basic line, which is end of program]
+;                               |  [ 10 is line number - 0010 ]
+;                               |         |  [ SYS ]
+;                               |         |    |  [ space ]
+;                               |         |    |    |  [ "1" ]
+;                               |         |    |    |    |
+              .byte      $0E, $04, $0A, $00, $9E, $20, $31
 
-; two lines up: 9E=SYS, then 31,30,38,38 are 1088 (which is $0440)
-
-; there are extra zeros padding this out to a 16-byte boundary - probably unnecessary, but it gives
-; a little bit of wiggle room if I need to change the BASIC code very slightly.
+;                  0408   09   0a   0b   0c   0d   0e   0f
+;                   [ "0" ]
+;                     |  [ "4" ]
+;                     |    |  [ "0" ]
+;                     |    |    |  [ end of basic statement "00" ]
+;                     |    |    |    |      [ end of basic program "00 00"]
+;                     |    |    |    |                   |
+              .byte $30, $34, $30, $00, $00, $00, $00, $00
 
 ; --------------------------------------------------------------------------------------------------
 
@@ -168,13 +174,20 @@ CHESSGAMESDATA = $0C00                 ; pointer to the location of the chess ga
 ; stub above
 STARTOFCODE:
 
-              org $0440
+              org $0410
               cld                 ; unset "decimal" mode for additions
 
-              ; setup the pointer to the game data
-STARTOVER:    DEFINE_PTR CHESSGAMESDATA, CHMOVEPTR
 
-NEWGAME:      jsr BLANKSCREEN
+              ; open the datafile
+STARTOVER:    jsr OPENFILE
+
+              ; read data from the file representing one complete game
+NEXTGAME:     jsr READCHGAME
+
+              ; reset the pointer to the beginning of the game data
+              DEFINE_PTR CHESSGAMESDATA, CHMOVEPTR
+
+              jsr BLANKSCREEN
               jsr BLANKBOARD
               jsr PRINTTITLE
               jsr SETDEFAULTS
@@ -187,10 +200,7 @@ NEWGAME:      jsr BLANKSCREEN
 TOPOFLOOP:    ldy #0
               lda (CHMOVEPTR),y   ; get byte from the data block
 
-              cmp #EOF            ; check for end of data
-              beq STARTOVER
-
-              ; advance to next byte - usually data for whatever token this is
+CONTINUE:     ; advance to next byte - usually data for whatever token this is
               ADVANCE_PTR CHMOVEPTR
 
               ;
@@ -252,8 +262,77 @@ JUMPTABLE:    .word THREESECS       ; ZZ
               .word PRINTBLACKP     ; BX
               .word STOREFIRSTMV    ; MX
               .word STOREFIRSTP     ; PX
-              .word NEWGAME         ; NG
               .word PRINTEOG        ; EOG
+              .word HANDLENG        ; NG
+              .word HANDLEEOF       ; EOF
+
+; --------------------------------------------------------------------------------------------------
+
+HANDLENG:     ; pull the address from the JSR off the stack because we want to jump out
+              pla
+              pla
+              jmp NEXTGAME
+
+; --------------------------------------------------------------------------------------------------
+
+HANDLEEOF:    ; EOF means we need to close the file and then reopen to restart the data
+              jsr CLOSEFILE
+
+              ; like above, pull the address from the JSR off the stack because we want to jump out
+              pla
+              pla
+              jmp STARTOVER
+
+
+; --------------------------------------------------------------------------------------------------
+
+OPENFILE:     lda #FILENUM
+              sta FILENUMLOC
+
+              lda #SECONDARYADDRNUM
+              sta SECONDARYADDRNUMLOC
+
+              lda #DEVICENUM
+              sta DEVICENUMLOC
+
+              lda #FILENAMELEN
+              sta FILENAMELENLOC
+
+              DEFINE_PTR FILEN, FILENAMEPTR
+
+              jsr KERNALOPENFILE
+
+              ldx #FILENUM
+              jsr KERNALSETINPUT
+
+              rts
+
+FILEN:        .byte 'C, 'H, 'E, 'S, 'S, 'D, 'A, 'T, 'A
+
+; --------------------------------------------------------------------------------------------------
+
+CLOSEFILE:    lda #2
+              jsr KERNALCLOSE
+              rts
+
+; --------------------------------------------------------------------------------------------------
+
+READCHGAME:   DEFINE_PTR CHESSGAMESDATA, CHMOVEPTR
+READCHAR:     jsr KERNALREADCHAR
+
+              ; stick byte from the data block
+              ldy #0
+              sta (CHMOVEPTR),y
+              ADVANCE_PTR CHMOVEPTR
+
+              ; either new game or EOF means stop the read
+              cmp #NG
+              beq READRETURN
+              cmp #EOF
+              beq READRETURN
+
+              jmp READCHAR
+READRETURN:   rts
 
 ; --------------------------------------------------------------------------------------------------
 ;
