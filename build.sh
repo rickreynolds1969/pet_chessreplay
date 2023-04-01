@@ -7,8 +7,9 @@ DASM=~/dasm_bin/dasm
 basenm=$(echo $1 | rev | cut -f 2- -d '.' | rev)
 srcfile="${basenm}.asm"
 outfile="${basenm}.prg"
+lstfile="${basenm}.lst"
 [ -f "$srcfile" ] || { echo "I don't see a $srcfile file here..." ; exit 1 ; }
 
-cmd="$DASM $srcfile -v5 -f1 -o${outfile}"
+cmd="$DASM $srcfile -v5 -f1 -o${outfile} -l${lstfile}"
 echo $cmd
 $cmd
