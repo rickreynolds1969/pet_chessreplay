@@ -1,12 +1,19 @@
-#processor 6502
-#seg code
+; --------------------------------------------------------------------------------------------------
+;
+; Built with dasm, via the following:
+;
+;     dasm chessreplay.asm -v5 -f1 -ochessreplay.prg
+;
+
+              PROCESSOR 6502
+              SEG code
 
 ;
 ; Definitions
 ;
 
-BL = $20          ; code for a black square on the chessboard
-WH = $A0          ; code for a white square on the chessboard
+BL = $20          ; PETSCII code for a black square on the chessboard
+WH = $A0          ; PETSCII code for a white square on the chessboard
 
 ; some zero-page pointers
 SQUAREPTR = $4B   ; zero page location where I'll store the screen address of a square to draw
@@ -15,7 +22,7 @@ CHMOVEPTR = $4F   ; zero page location where I'll store the address of the move 
 SOURCEPTR = $51   ; zero page pointer to the text are on the screen, for scrolling
 SCREENPTR = $53   ; zero page pointer to the text are on the screen, for scrolling
 
-; locations and constants for file operations
+; locations and constants for file operations - probably need to be changed for other BASIC ROMs
 KERNALCLOSE = $F2E2
 KERNALREADCHAR = $F215
 KERNALSETINPUT = $F7AF
@@ -27,15 +34,16 @@ SECONDARYADDRNUMLOC = $D3
 DEVICENUMLOC = $D4
 FILENAMEPTR = $DA
 
+; kind of arbitrary numbers here, could be changed to read from a different disk, etc.
 FILENUM = 2
 SECONDARYADDRNUM = 2
 DEVICENUM = 8
-FILENAMELEN = 9
 
-; Codes for the data stream loop. NOTE: in a former version these codes were used for matching
-; specific tokens in the game data. Now they aren't really used as symbols as they've been replaced
-; with more efficient (I think) jump tables. But these are the codes' names at this point, so I'm
-; leaving the definitions here.
+; Codes for the data stream loop.
+;
+; NOTE: in a former version these codes were used for matching specific tokens in the game data. Now
+; they aren't really used as symbols as they've been replaced with more efficient (I think) jump
+; tables. But these are the codes' names at this point, so I'm leaving the definitions here.
 BR = 101      ; pieces: Black Rook, Black kNight, etc.
 BN = 102
 BB = 103
@@ -77,7 +85,9 @@ BLACKLOC = $80B8                       ; pointer to the location to print the Bl
 DATELOC = $8108                        ; pointer to the location to print the Date text
 TITLELOC = $83C0                       ; pointer to the location to print the Title text
 
-CHESSGAMESDATA = $0D00                 ; pointer to the location of the chess games data
+CHESSGAMESDATA = $0D00                 ; pointer to the location of the chess games data - just needs
+                                       ; to be higher in memory than the end of this assembly code
+                                       ; - see ENDOFCODE
 
 ; some macros for dealing with pointers
               MAC DEFINE_PTR         ;  {addr, ptr}
@@ -200,7 +210,7 @@ NEXTGAME:     jsr READCHGAME
 TOPOFLOOP:    ldy #0
               lda (CHMOVEPTR),y   ; get byte from the data block
 
-CONTINUE:     ; advance to next byte - usually data for whatever token this is
+              ; advance to next byte - usually data for whatever token this is
               ADVANCE_PTR CHMOVEPTR
 
               ;
@@ -250,7 +260,7 @@ DOJUMP:       asl                 ; addresses are 16-bit, double the offset into
 JMPCMD:       jsr 1000            ; this address gets overwritten by the above code, simulating a jump table
               jmp TOPOFLOOP
 
-              ; these are all the addresses of the routines to call based on the tokens
+              ; these are all the addresses of the routines to call based on the tokens read from the chess data
 JUMPTABLE:    .word THREESECS       ; ZZ
               .word DRAWONEPIECE    ; DP
               .word DRAWNPIECES     ; DN
@@ -285,6 +295,11 @@ HANDLEEOF:    ; EOF means we need to close the file and then reopen to restart t
 
 
 ; --------------------------------------------------------------------------------------------------
+;
+;  Open a file - written for BASIC 4.0
+;
+;  Material from the Commodore BASIC 4 User's Reference Manual
+;
 
 OPENFILE:     lda #FILENUM
               sta FILENUMLOC
@@ -307,15 +322,19 @@ OPENFILE:     lda #FILENUM
 
               rts
 
+FILENAMELEN = 9
 FILEN:        .byte 'C, 'H, 'E, 'S, 'S, 'D, 'A, 'T, 'A
 
 ; --------------------------------------------------------------------------------------------------
 
-CLOSEFILE:    lda #2
+CLOSEFILE:    lda #FILENUM
               jsr KERNALCLOSE
               rts
 
 ; --------------------------------------------------------------------------------------------------
+;
+;  Read one game's worth of data from the data file
+;
 
 READCHGAME:   DEFINE_PTR CHESSGAMESDATA, CHMOVEPTR
 READCHAR:     jsr KERNALREADCHAR
@@ -440,7 +459,7 @@ DRAWCHESSMOVE:
               ; draw the piece
               jsr BLACKORWHITESQ
               jsr DEFPIECEPTR
-              ; SQUAREPTR is still set the the source square
+              ; SQUAREPTR is still set to the destination square
               jsr DRAWATSQUARE
               rts
 
@@ -461,7 +480,7 @@ PIECESLOOP:   jsr DRAWONEPIECE
 
 ; --------------------------------------------------------------------------------------------------
 ;
-;  Draws a piece as defined by bytes in the input stream, CHMOVEPTR is advanced past it
+;  Draws one piece as defined by bytes in the input stream, CHMOVEPTR is advanced past it
 ;
 DRAWONEPIECE:
               ; get both bytes from the stream
@@ -495,7 +514,7 @@ DRAWONEPIECE1:
 MULT18:
               ; 18x = 16x + 2x
               asl                ; 2A
-              pha                ; 2A on the stack
+              pha                ; put 2A on the stack
               asl                ; 4A
               asl                ; 8A
               asl                ; 16A
@@ -676,7 +695,7 @@ DRAWATSQUARE:
 
 ; --------------------------------------------------------------------------------------------------
 ;
-;  Draw the initial chess pieces setup
+;  Draw the initial chess pieces setup - starting positions for a standard chess game
 ;
 RESETBOARD:
               DEFINE_PTR STARTPOS, SOURCEPTR
@@ -721,10 +740,11 @@ SETDEFAULTS:  ; these are defaults - the PGN data can override these if necessar
 PRINTTITLE:
               DEFINE_PTR TITLETEXT, SOURCEPTR
               DEFINE_PTR TITLELOC, SCREENPTR
+              ADVANCE_PTR_BY_N SCREENPTR, 5
               jsr PRINTSTR
               rts
 
-TITLETEXT:    .byte 32, 32, 32, 32, 32, 3, 8, 5, 19, 19, 32, 18, 5, 16, 12, 1, 25, 5, 18, EOR
+TITLETEXT:    .byte 3, 8, 5, 19, 19, 32, 18, 5, 16, 12, 1, 25, 5, 18, EOR
 
 ; --------------------------------------------------------------------------------------------------
 ;
@@ -1036,8 +1056,10 @@ SQNUMBER:     .byte $00
 SQCOLOR:      .byte $00
 
 ; --------------------------------------------------------------------------------------------------
-;                    a    b    c    d    e    f    g    h
-; these are the actual screen addresses of each square of the chess board
+;
+; these are the actual screen addresses of each square of the chess board, split out by
+; hi and lo bytes
+;
 ;                    a    b    c    d    e    f    g    h
 SQHIADDR:     .byte $80, $80, $80, $80, $80, $80, $80, $80   ; 8
               .byte $80, $80, $80, $80, $80, $80, $80, $80   ; 7
@@ -1058,7 +1080,7 @@ SQLOADDR:     .byte $00, $03, $06, $09, $0C, $0F, $12, $15   ; 8
               .byte $D0, $D3, $D6, $D9, $DC, $DF, $E2, $E5   ; 2
               .byte $48, $4B, $4E, $51, $54, $57, $5A, $5D   ; 1
 
-; these each represent one line across the screen of a an empty board - one starts with white
+; these each represent one line across the screen of an empty board - one starts with white
 ; square, one with black
 ;                    1   2   3   4   5   6   7   8   9  10  11  12
 BLANKB1:      .byte WH, WH, WH, BL, BL, BL, WH, WH, WH, BL, BL, BL
@@ -1110,7 +1132,7 @@ BLACKSQ:      .byte BL, BL, BL, BL, BL, BL, BL, BL, BL
 ;
 ; flashing version of pieces
 ;
-; Like the pieces data block above, these chunks CAN be address via names but aren't currently in
+; Like the pieces data block above, these chunks CAN be addressed via names but aren't currently in
 ; the algorithm
 ;
 FLASHDATA:
